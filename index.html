@@ -1,0 +1,63 @@
+<script>
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+
+    // YOUR API KEY (Keep this private!)
+    const OPENROUTER_API_KEY = "sk-or-v1-aa8...c27"; 
+
+    window.onload = () => {
+        addMessage("Hello! I am Jarvis Lite, now powered by OpenRouter. How can I assist you today?", 'bot-msg');
+    };
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (text === "") return;
+
+        // 1. Display User Message
+        addMessage(text, 'user-msg');
+        userInput.value = "";
+
+        // 2. Show a "typing" indicator
+        const typingId = "typing-" + Date.now();
+        addMessage("Jarvis is thinking...", 'bot-msg', typingId);
+
+        try {
+            // 3. Call OpenRouter API
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    "model": "mistralai/mistral-7b-instruct:free", // You can change this model
+                    "messages": [
+                        {"role": "user", "content": text}
+                    ]
+                })
+            });
+
+            const data = await response.json();
+            const aiResponse = data.choices[0].message.content;
+
+            // 4. Replace typing indicator with real response
+            document.getElementById(typingId).innerText = aiResponse;
+
+        } catch (error) {
+            console.error("Error:", error);
+            document.getElementById(typingId).innerText = "System Error: Unable to connect to Jarvis core.";
+        }
+    }
+
+    // Helper to add messages to the UI
+    function addMessage(text, className, id = null) {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', className);
+        if (id) msgDiv.id = id;
+        msgDiv.innerText = text;
+        chatWindow.appendChild(msgDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+</script>
